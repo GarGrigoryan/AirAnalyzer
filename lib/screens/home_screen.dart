@@ -10,7 +10,8 @@ String _formatTimeAgo(int? timestamp) {
   if (timestamp == null) return 'Never';
   
   final now = DateTime.now().millisecondsSinceEpoch;
-  final difference = now - timestamp;
+  final timestampMs = timestamp * 1000;
+  final difference = now - timestampMs;
   
   if (difference < 60000) {
     return 'Just now';
@@ -72,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isDataFresh(int? timestamp) {
     if (timestamp == null) return false;
     final now = DateTime.now().millisecondsSinceEpoch;
-    return (now - timestamp) < 5 * 60 * 1000; // 5 minutes in milliseconds
+    final timestampMs = timestamp * 1000;
+    return (now - timestampMs) < 5 * 60 * 1000; // 5 minutes in milliseconds
   }
 
   Future<void> _loadData() async {
