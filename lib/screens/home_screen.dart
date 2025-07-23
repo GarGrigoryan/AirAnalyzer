@@ -4,6 +4,7 @@ import '../services/firebase_service.dart';
 import '../services/ble_service.dart';
 import '../models/sensor_data.dart';
 import '../models/settings_data.dart';
+import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final BleService _bleService = BleService();
 
+  Timer? _updateTimer;
+
   SensorData? _sensorData;
   SettingsData? _settingsData;
   bool _showSettings = false;
@@ -27,6 +30,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _startAutoUpdate();
+  }
+
+  void _startAutoUpdate(){
+    _updateTimer?.cancel();
+    _updateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        _loadData();
+      }
+    });
+  }
+
+  void _stopAutoUpdate() {
+    _updateTimer?.cancel();
+    _updateTimer = null;
   }
 
   Future<void> _loadData() async {
@@ -87,6 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _stopAutoUpdate();
     _ssidController.dispose();
     _passController.dispose();
     super.dispose();
