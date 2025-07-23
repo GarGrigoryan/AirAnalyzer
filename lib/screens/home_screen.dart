@@ -6,6 +6,23 @@ import '../models/sensor_data.dart';
 import '../models/settings_data.dart';
 import 'dart:async';
 
+String _formatTimeAgo(int? timestamp) {
+  if (timestamp == null) return 'Never';
+  
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final difference = now - timestamp;
+  
+  if (difference < 60000) {
+    return 'Just now';
+  } else if (difference < 3600000) {
+    return '${(difference / 60000).round()}m ago';
+  } else if (difference < 86400000) {
+    return '${(difference / 3600000).round()}h ago';
+  } else {
+    return '${(difference / 86400000).round()}d ago';
+  }
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -50,6 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _stopAutoUpdate() {
     _updateTimer?.cancel();
     _updateTimer = null;
+  }
+
+  bool _isDataFresh(int? timestamp) {
+    if (timestamp == null) return false;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (now - timestamp) < 5 * 60 * 1000; // 5 minutes in milliseconds
   }
 
   Future<void> _loadData() async {
@@ -197,6 +220,9 @@ class _HomeScreenState extends State<HomeScreen> {
           rejimCo: false,
         );
 
+    final isFresh = _isDataFresh(sensor.timestamp);
+    final timeText = _formatTimeAgo(sensor.timestamp);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Air Analyzer"),
@@ -242,6 +268,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text("Humidity: ${sensor.humidity} %", style: const TextStyle(fontSize: 24)),
                   const SizedBox(height: 10),
                   Text("CO₂: ${sensor.co2} ppm", style: const TextStyle(fontSize: 24)),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.wifi,
+                        color: isFresh ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        timeText,
+                        style: TextStyle(
+                          color: isFresh ? Colors.green : Colors.red,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

@@ -1,12 +1,14 @@
 class SensorData {
-  final double temperature; // changed to double for float values
+  final double temperature;
   final int humidity;
   final int co2;
+  final int? timestamp;
 
   SensorData({
     required this.temperature,
     required this.humidity,
     required this.co2,
+    this.timestamp,
   });
 
   factory SensorData.fromMap(Map<String, dynamic> map) {
@@ -14,6 +16,7 @@ class SensorData {
       temperature: (map['temperature'] as num?)?.toDouble() ?? 0.0,
       humidity: map['humidity'] ?? 0,
       co2: map['co2'] ?? 0,
+      timestamp: map['timestamp']?.toInt(), 
     );
   }
 }
