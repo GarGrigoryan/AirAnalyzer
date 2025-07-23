@@ -9,7 +9,7 @@ class FirebaseService {
   FirebaseService._internal();
 
   final _auth = FirebaseAuth.instance;
-  final _db = FirebaseDatabase.instance.reference();
+  final _db = FirebaseDatabase.instance.ref(); // Use ref() instead of reference()
   String? _uid;
 
   /// Login using Firebase Email/Password
@@ -21,76 +21,51 @@ class FirebaseService {
     _uid = result.user?.uid;
   }
 
-  /// Returns the current device ID (UID)
-  String get deviceId => _uid ?? "dAxXdU5e4PVqpvre1iXZWIWRl5k1"; // fallback for testing
+  /// Get device ID (UID), fallback for testing
+  String get deviceId => _uid ?? "dAxXdU5e4PVqpvre1iXZWIWRl5k1";
 
-  /// Shortcut to device reference in database
+  /// Firebase DB ref for current device
   DatabaseReference get _deviceRef => _db.child("devices").child(deviceId);
 
   /// Fetch live sensor data
   Future<SensorData?> fetchSensorData() async {
-  final snapshot = await _deviceRef.child("sensors").once();
-  if (snapshot.snapshot.value == null) {
-    print('No sensor data found');
-    return null;
+    final snapshot = await _deviceRef.child("sensors").once();
+    final data = snapshot.snapshot.value;
+    if (data == null) {
+      print('No sensor data found');
+      return null;
+    }
+    return SensorData.fromMap(Map<String, dynamic>.from(data as Map));
   }
-  final data = Map<String, dynamic>.from(snapshot.snapshot.value as Map);
-  return SensorData.fromMap(data);
-}
 
-  /// Fetch both settings and modes as SettingsData
+  /// Fetch both settings and modes
   Future<SettingsData?> fetchSettingsData() async {
-  final settingsSnap = await _deviceRef.child("settings").once();
-  final modesSnap = await _deviceRef.child("modes").once();
+    final settingsSnap = await _deviceRef.child("settings").once();
+    final modesSnap = await _deviceRef.child("modes").once();
 
-  if (settingsSnap.snapshot.value == null || modesSnap.snapshot.value == null) {
-    print('No settings or modes data found');
-    return null;
+    final settings = settingsSnap.snapshot.value;
+    final modes = modesSnap.snapshot.value;
+
+    if (settings == null || modes == null) {
+      print('No settings or modes found');
+      return null;
+    }
+
+    return SettingsData.fromMap(
+      Map<String, dynamic>.from(settings as Map),
+      Map<String, dynamic>.from(modes as Map),
+    );
   }
 
-  final settings = Map<String, dynamic>.from(settingsSnap.snapshot.value as Map);
-  final modes = Map<String, dynamic>.from(modesSnap.snapshot.value as Map);
-  return SettingsData.fromMap(settings, modes);
-}
-
-  /// Update settings and modes in Firebase
-  Future<void> updateSettings(SettingsData settings) async {
-    await _deviceRef.child("settings").set(settings.toSettingsMap());
-    await _deviceRef.child("modes").set(settings.toModesMap());
+  /// Save updated settings + modes
+  Future<void> updateSettings(SettingsData data) async {
+    await _deviceRef.child("settings").set(data.toSettingsMap());
+    await _deviceRef.child("modes").set(data.toModesMap());
   }
 
-  /// Get last sensor timestamp (for offline detection)
+  /// Used to check last timestamp of sensor update
   Future<int?> getLastTimestamp() async {
     final snapshot = await _deviceRef.child("sensors/timestamp").once();
     return snapshot.snapshot.value as int?;
-  }
-
-  /// Used by widgets or services that expect this structure
-  Future<SensorData> getSensorData(String deviceId) async {
-    final ref = _db.child('devices/$deviceId/sensors');
-    final snapshot = await ref.get();
-    if (snapshot.exists) {
-      return SensorData.fromMap(Map<String, dynamic>.from(snapshot.value as Map));
-    } else {
-      throw Exception('Sensor data not found');
-    }
-  }
-
-  Future<SettingsData> getSettingsData(String deviceId) async {
-    final settingsSnap = await _db.child('devices/$deviceId/settings').get();
-    final modesSnap = await _db.child('devices/$deviceId/modes').get();
-
-    if (settingsSnap.exists && modesSnap.exists) {
-      final settings = Map<String, dynamic>.from(settingsSnap.value as Map);
-      final modes = Map<String, dynamic>.from(modesSnap.value as Map);
-      return SettingsData.fromMap(settings, modes);
-    } else {
-      throw Exception('Settings or modes not found');
-    }
-  }
-
-  Future<void> updateSettingsData(String deviceId, SettingsData data) async {
-    await _db.child('devices/$deviceId/settings').set(data.toSettingsMap());
-    await _db.child('devices/$deviceId/modes').set(data.toModesMap());
   }
 }

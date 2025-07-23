@@ -1,62 +1,48 @@
 class SettingsData {
-  final int coUp;
-  final int coDown;
-  final int humUp;
-  final int humDown;
-  final bool rejimCo;
-  final bool rejimHum;
-  final bool rejimTemp;
+  int tempUp;
+  int tempDown;
+  int humUp;
+  int humDown;
+  int coUp;
+  int coDown;
+  bool rejimTemp;
+  bool rejimHum;
+  bool rejimCo;
 
   SettingsData({
-    required this.coUp,
-    required this.coDown,
+    required this.tempUp,
+    required this.tempDown,
     required this.humUp,
     required this.humDown,
-    required this.rejimCo,
-    required this.rejimHum,
+    required this.coUp,
+    required this.coDown,
     required this.rejimTemp,
+    required this.rejimHum,
+    required this.rejimCo,
   });
-
-  SettingsData copyWith({
-  int? coUp,
-  int? coDown,
-  int? humUp,
-  int? humDown,
-  bool? rejimCo,
-  bool? rejimHum,
-  bool? rejimTemp,
-}) {
-  return SettingsData(
-    coUp: coUp ?? this.coUp,
-    coDown: coDown ?? this.coDown,
-    humUp: humUp ?? this.humUp,
-    humDown: humDown ?? this.humDown,
-    rejimCo: rejimCo ?? this.rejimCo,
-    rejimHum: rejimHum ?? this.rejimHum,
-    rejimTemp: rejimTemp ?? this.rejimTemp,
-  );
-}
 
   factory SettingsData.fromMap(Map<String, dynamic> settings, Map<String, dynamic> modes) {
     return SettingsData(
-      coUp: settings['co_up'] ?? 0,
-      coDown: settings['co_down'] ?? 0,
+      tempUp: settings['temp_up'] ?? 0,
+      tempDown: settings['temp_down'] ?? 0,
       humUp: settings['hum_up'] ?? 0,
       humDown: settings['hum_down'] ?? 0,
-      rejimCo: modes['rejim_co'] ?? false,
-      rejimHum: modes['rejim_hum'] ?? false,
+      coUp: settings['co_up'] ?? 0,
+      coDown: settings['co_down'] ?? 0,
       rejimTemp: modes['rejim_temp'] ?? false,
+      rejimHum: modes['rejim_hum'] ?? false,
+      rejimCo: modes['rejim_co'] ?? false,
     );
   }
 
   Map<String, dynamic> toSettingsMap() {
     return {
-      'co_up': coUp,
-      'co_down': coDown,
+      'temp_up': tempUp,
+      'temp_down': tempDown,
       'hum_up': humUp,
       'hum_down': humDown,
-      'rejim_co': rejimCo,
-      'rejim_hum': rejimHum,
+      'co_up': coUp,
+      'co_down': coDown,
     };
   }
 

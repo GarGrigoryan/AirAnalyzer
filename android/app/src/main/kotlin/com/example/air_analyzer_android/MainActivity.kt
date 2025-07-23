@@ -1,4 +1,5 @@
-package com.example.air_analyzer_android
+package com.garik.airanalyzer
+
 
 import io.flutter.embedding.android.FlutterActivity
 
