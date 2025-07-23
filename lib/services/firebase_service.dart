@@ -29,33 +29,57 @@ class FirebaseService {
 
   /// Fetch live sensor data
   Future<SensorData?> fetchSensorData() async {
-    final snapshot = await _deviceRef.child("sensors").once();
-    final data = snapshot.snapshot.value;
-    if (data == null) {
-      print('No sensor data found');
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final deviceId = user.uid; // Assuming device ID == Firebase UID
+    final ref = FirebaseDatabase.instance.ref('devices/$deviceId/sensors');
+
+    final snapshot = await ref.get();
+    if (!snapshot.exists) {
+      print("No sensor data found for user: $deviceId");
       return null;
     }
-    return SensorData.fromMap(Map<String, dynamic>.from(data as Map));
+
+    final data = snapshot.value as Map;
+
+    return SensorData(
+      temperature: (data['temperature'] ?? 0).toDouble(),
+      humidity: (data['humidity'] ?? 0).toInt(),
+      co2: (data['co2'] ?? 0).toInt(),
+      timestamp: (data['timestamp'] ?? 0).toInt(),
+    );
   }
 
   /// Fetch both settings and modes
   Future<SettingsData?> fetchSettingsData() async {
-    final settingsSnap = await _deviceRef.child("settings").once();
-    final modesSnap = await _deviceRef.child("modes").once();
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return null;
 
-    final settings = settingsSnap.snapshot.value;
-    final modes = modesSnap.snapshot.value;
+  final deviceId = user.uid;
+  final ref = FirebaseDatabase.instance.ref('devices/$deviceId/settings');
 
-    if (settings == null || modes == null) {
-      print('No settings or modes found');
-      return null;
-    }
-
-    return SettingsData.fromMap(
-      Map<String, dynamic>.from(settings as Map),
-      Map<String, dynamic>.from(modes as Map),
-    );
+  final snapshot = await ref.get();
+  if (!snapshot.exists) {
+    print("No settings data found for user: $deviceId");
+    return null;
   }
+
+  final data = snapshot.value as Map;
+
+  return SettingsData(
+    tempUp: (data['temp_up'] ?? data['tempUp'] ?? 0).toInt(),
+    tempDown: (data['temp_down'] ?? data['tempDown'] ?? 0).toInt(),
+    humUp: (data['hum_up'] ?? data['humUp'] ?? 0).toInt(),
+    humDown: (data['hum_down'] ?? data['humDown'] ?? 0).toInt(),
+    coUp: (data['co_up'] ?? data['coUp'] ?? 0).toInt(),
+    coDown: (data['co_down'] ?? data['coDown'] ?? 0).toInt(),
+    rejimTemp: (data['rejim_temp'] ?? false),
+    rejimHum: (data['rejim_hum'] ?? false),
+    rejimCo: (data['rejim_co'] ?? false),
+  );
+}
+
 
   /// Save updated settings + modes
   Future<void> updateSettings(SettingsData data) async {
