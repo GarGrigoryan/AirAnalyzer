@@ -17,6 +17,8 @@ dependencies:
   flutter_reactive_ble: ^5.0.2
   permission_handler: ^10.4.0
   timeago: ^3.3.0
+  firebase_messaging: ^14.7.4
+  cloud_firestore: ^4.7.1
 
 dev_dependencies:
   flutter_test:

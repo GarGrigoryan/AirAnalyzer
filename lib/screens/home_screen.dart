@@ -5,6 +5,8 @@ import '../services/ble_service.dart';
 import '../models/sensor_data.dart';
 import '../models/settings_data.dart';
 import 'dart:async';
+import 'package:air_analyzer_android/services/notification_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 String _formatTimeAgo(int? timestamp) {
   if (timestamp == null) return 'Never';
@@ -35,11 +37,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final BleService _bleService = BleService();
 
+  Timer? _timeAgoTimer;
+  final ValueNotifier<String> _timeAgoNotifier = ValueNotifier("");
+  bool _notifiedStale = false;
+
   Timer? _updateTimer;
 
   SensorData? _sensorData;
   SettingsData? _settingsData;
   bool _showSettings = false;
+
 
   // Controllers for numeric input fields
   final TextEditingController _tempUpController = TextEditingController();
@@ -53,7 +60,45 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _requestPermissions();
     _startAutoUpdate();
+    checkSensorFreshness();
+    startPeriodicCheck();
+    _timeAgoTimer = Timer.periodic(Duration(seconds: 30), (_) {
+    if (!mounted) return;
+      _timeAgoNotifier.value = _formatTimeAgo(_sensorData?.timestamp);
+    });
+  }
+
+  Future<void> _requestPermissions() async {
+  final status = await Permission.notification.status;
+  if (!status.isGranted) {
+    await Permission.notification.request();
+  }
+}
+
+  void checkSensorFreshness() async {
+  if (_sensorData == null || _sensorData!.timestamp == null) return;
+
+  final int now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  final int timestamp = _sensorData!.timestamp!; // ✅ Moved here
+
+  final int diffMinutes = ((now - timestamp) / 60).floor();
+
+  if (diffMinutes >= 5 && !_notifiedStale) {
+    await NotificationService.showStaleDataNotification();
+    _notifiedStale = true;
+  } else if (diffMinutes < 5) {
+    _notifiedStale = false;
+  }
+}
+
+
+  void startPeriodicCheck() {
+  Timer.periodic(Duration(minutes: 1), (timer) {
+    if (!mounted) timer.cancel(); // Stop if widget disposed
+    checkSensorFreshness();
+  });
   }
 
   void _startAutoUpdate() {
@@ -203,6 +248,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _humDownController.dispose();
     _coUpController.dispose();
     _coDownController.dispose();
+    _timeAgoTimer?.cancel();
+    _timeAgoNotifier.dispose();
     super.dispose();
   }
 
@@ -223,7 +270,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
     final isFresh = _isDataFresh(sensor.timestamp);
-    final timeText = _formatTimeAgo(sensor.timestamp);
 
     return Scaffold(
       appBar: AppBar(
@@ -279,13 +325,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: isFresh ? Colors.green : Colors.red,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        timeText,
-                        style: TextStyle(
-                          color: isFresh ? Colors.green : Colors.red,
-                          fontSize: 16,
-                        ),
-                      ),
+                      ValueListenableBuilder<String>(
+  valueListenable: _timeAgoNotifier,
+  builder: (context, timeText, _) {
+    final isFresh = _isDataFresh(_sensorData?.timestamp);
+    return Text(
+      timeText,
+      style: TextStyle(
+        color: isFresh ? Colors.green : Colors.red,
+        fontSize: 16,
+      ),
+    );
+  },
+)
                     ],
                   ),
                 ],

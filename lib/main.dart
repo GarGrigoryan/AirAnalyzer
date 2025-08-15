@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart'; // you need to create this
-import 'services/notification_service.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/firebase_messaging_service.dart';
+import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
-  // Initialize notifications
+  // ✅ Register background message handler FIRST (before Firebase.init)
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  await Firebase.initializeApp(); // 👈 must be AFTER background handler registration
+
   await NotificationService.init();
+  await FirebaseMessagingService.init(); // Initialize FCM
 
-  // Initialize Workmanager for background tasks
   Workmanager().initialize(
     NotificationService.callbackDispatcher,
-    isInDebugMode: true, // set false for production
+    isInDebugMode: false,
   );
 
-  // Register periodic background task for notifications
   NotificationService.registerBackgroundTask();
 
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -31,35 +36,34 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Project X',
+      title: 'Air Analyzer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: AuthWrapper(),
+      home: const AuthWrapper(),
     );
   }
 }
 
-// Widget that listens to auth state and shows login or home accordingly
+/// This widget shows login or home based on auth state
 class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // If loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // If logged in, show HomeScreen
         if (snapshot.hasData) {
           return const HomeScreen();
+        } else {
+          return const LoginScreen();
         }
-
-        // Else show LoginScreen
-        return const LoginScreen();
       },
     );
   }
