@@ -7,6 +7,8 @@ import '../models/settings_data.dart';
 import 'dart:async';
 import 'package:air_analyzer_android/services/notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+
 
 String _formatTimeAgo(int? timestamp) {
   if (timestamp == null) return 'Never';
@@ -155,10 +157,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) Navigator.pushReplacementNamed(context, "/login");
   }
 
-  void _connectBLE() async {
-    await _bleService.connect();
-  }
-
   void _saveSettings() async {
     if (_settingsData != null) {
       // Update settings from text fields
@@ -290,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: "Settings",
           ),
           IconButton(
-            onPressed: _connectBLE, 
+            onPressed: _showBleDevicePicker, 
             icon: const Icon(Icons.bluetooth),
             tooltip: "Connect BLE",
           ),
@@ -498,4 +496,93 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  void _showBleDevicePicker() async {
+  final status = await Permission.location.request();
+  if (!status.isGranted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Location permission is required for BLE scan")),
+    );
+    return;
+  }
+
+  List<DiscoveredDevice> devices = [];
+
+  // Show a loading dialog while scanning
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      // Start scanning
+      _bleService.startScan((device) {
+        if (!devices.any((d) => d.id == device.id)) {
+          devices.add(device);
+        }
+      });
+      return AlertDialog(
+        title: const Text("Scanning for BLE devices..."),
+        content: const SizedBox(
+          height: 100,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _bleService.stopScan();
+              Navigator.pop(context);
+            },
+            child: const Text("Cancel"),
+          ),
+        ],
+      );
+    },
+  );
+
+  // Wait a few seconds for scanning
+  await Future.delayed(const Duration(seconds: 5));
+  _bleService.stopScan();
+  Navigator.pop(context); // Close loading dialog
+
+  if (devices.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("No BLE devices found")),
+    );
+    return;
+  }
+
+  // Show devices in a selection dialog
+  showDialog(
+    context: context,
+    builder: (_) {
+      return AlertDialog(
+        title: const Text("Select BLE Device"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: devices.length,
+            itemBuilder: (context, index) {
+              final device = devices[index];
+              return ListTile(
+                title: Text(device.name.isNotEmpty ? device.name : device.id),
+                subtitle: Text(device.id),
+                onTap: () async {
+                  Navigator.pop(context); // Close picker
+                  await _bleService.connectToDevice(device.id);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Connected to ${device.name}")),
+                  );
+
+                  // Open Wi-Fi dialog
+                  _showWifiDialog();
+                },
+              );
+            },
+          ),
+        ),
+      );
+    },
+  );
+}
 }

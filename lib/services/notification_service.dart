@@ -1,20 +1,21 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:workmanager/workmanager.dart';
 import 'firebase_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const notificationTask = "checkSensorTimestamp";
+const lastNotifiedKey = "lastNotifiedTimestamp";
 
 class NotificationService {
   static final _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  /// Initialize notification plugin + channels
+  /// Initialize notification channels and plugin
   static Future<void> init() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settings = InitializationSettings(android: android);
     await _flutterLocalNotificationsPlugin.initialize(settings);
 
-    // Create channels so remote FCM can post into them
     const staleChannel = AndroidNotificationChannel(
       'stale_data_channel',
       'Stale Sensor Data',
@@ -29,14 +30,13 @@ class NotificationService {
     );
 
     final androidPlugin = _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     await androidPlugin?.createNotificationChannel(staleChannel);
     await androidPlugin?.createNotificationChannel(fcmChannel);
   }
 
-  /// Local notification (used for WorkManager fallback or manual trigger)
+  /// Show notification about stale sensor data
   static Future<void> showStaleDataNotification() async {
     const androidDetails = AndroidNotificationDetails(
       'stale_data_channel',
@@ -45,25 +45,33 @@ class NotificationService {
       priority: Priority.high,
     );
     const notifDetails = NotificationDetails(android: androidDetails);
+
     await _flutterLocalNotificationsPlugin.show(
       1,
       'Device might be offline',
       'No new sensor data received for 5+ minutes',
       notifDetails,
     );
+
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await prefs.setInt(lastNotifiedKey, now);
   }
 
-  /// Register WorkManager task (OPTIONAL: only if you want local checking as backup)
+  /// Register periodic background task
   static void registerBackgroundTask() {
     Workmanager().registerPeriodicTask(
       "staleSensorCheckTask",
       notificationTask,
       frequency: const Duration(minutes: 15),
       initialDelay: const Duration(seconds: 10),
+      constraints: Constraints(
+        networkType: NetworkType.connected,
+      ),
     );
   }
 
-  /// Background check logic for WorkManager (OPTIONAL)
+  /// Callback dispatcher for WorkManager
   static void callbackDispatcher() {
     Workmanager().executeTask((task, inputData) async {
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -72,11 +80,17 @@ class NotificationService {
 
       if (task == notificationTask) {
         final firebase = FirebaseService();
-        final timestamp = await firebase.getLastTimestamp();
+        final timestamp = await firebase.getLastTimestamp(); // in milliseconds
         if (timestamp != null) {
-          final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-          final diffMinutes = (now - timestamp) ~/ 60;
-          if (diffMinutes >= 5) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final prefs = await SharedPreferences.getInstance();
+          final lastNotified = prefs.getInt(lastNotifiedKey) ?? 0;
+
+          final diffMinutes = (now - timestamp) ~/ 60000; // ms → minutes
+          final cooldownMinutes = (now - lastNotified) ~/ 60000;
+
+          // Only notify if data is stale and we haven't notified in last 10 minutes
+          if (diffMinutes >= 5 && cooldownMinutes >= 10) {
             await showStaleDataNotification();
           }
         }
@@ -84,5 +98,23 @@ class NotificationService {
 
       return Future.value(true);
     });
+  }
+
+  /// Foreground check for stale data
+  static Future<void> checkStaleDataForeground() async {
+    final firebase = FirebaseService();
+    final timestamp = await firebase.getLastTimestamp(); // in milliseconds
+    if (timestamp != null) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final prefs = await SharedPreferences.getInstance();
+      final lastNotified = prefs.getInt(lastNotifiedKey) ?? 0;
+
+      final diffMinutes = (now - timestamp) ~/ 60000;
+      final cooldownMinutes = (now - lastNotified) ~/ 60000;
+
+      if (diffMinutes >= 5 && cooldownMinutes >= 10) {
+        await showStaleDataNotification();
+      }
+    }
   }
 }

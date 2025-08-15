@@ -10,22 +10,15 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // ✅ Register background message handler FIRST (before Firebase.init)
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  await Firebase.initializeApp(); // 👈 must be AFTER background handler registration
-
+  await Firebase.initializeApp(); 
   await NotificationService.init();
-  await FirebaseMessagingService.init(); // Initialize FCM
-
+  await FirebaseMessagingService.init();
   Workmanager().initialize(
     NotificationService.callbackDispatcher,
     isInDebugMode: false,
   );
-
   NotificationService.registerBackgroundTask();
-
   runApp(const MyApp());
 }
 
@@ -44,7 +37,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// This widget shows login or home based on auth state
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
