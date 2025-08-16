@@ -135,18 +135,18 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Settings data fetched: $settings");
 
       if (mounted) {
-        setState(() {
-          _sensorData = sensor;
-          _settingsData = settings;
-          // Initialize controllers with current values
-          _tempUpController.text = settings?.tempUp.toString() ?? '0';
-          _tempDownController.text = settings?.tempDown.toString() ?? '0';
-          _humUpController.text = settings?.humUp.toString() ?? '0';
-          _humDownController.text = settings?.humDown.toString() ?? '0';
-          _coUpController.text = settings?.coUp.toString() ?? '0';
-          _coDownController.text = settings?.coDown.toString() ?? '0';
-        });
-      }
+  setState(() {
+    _sensorData = sensor;
+    _settingsData = settings;
+    // Initialize controllers with current values, 1 decimal for temps
+    _tempUpController.text = settings?.tempUp.toStringAsFixed(1) ?? '0.0';
+    _tempDownController.text = settings?.tempDown.toStringAsFixed(1) ?? '0.0';
+    _humUpController.text = settings?.humUp.toString() ?? '0';
+    _humDownController.text = settings?.humDown.toString() ?? '0';
+    _coUpController.text = settings?.coUp.toString() ?? '0';
+    _coDownController.text = settings?.coDown.toString() ?? '0';
+  });
+}
     } catch (e) {
       print("Error loading data: $e");
     }
@@ -159,20 +159,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _saveSettings() async {
     if (_settingsData != null) {
-      // Update settings from text fields
-      _settingsData!.tempUp = int.tryParse(_tempUpController.text) ?? 0;
-      _settingsData!.tempDown = int.tryParse(_tempDownController.text) ?? 0;
-      _settingsData!.humUp = int.tryParse(_humUpController.text) ?? 0;
-      _settingsData!.humDown = int.tryParse(_humDownController.text) ?? 0;
-      _settingsData!.coUp = int.tryParse(_coUpController.text) ?? 0;
-      _settingsData!.coDown = int.tryParse(_coDownController.text) ?? 0;
+  // Update settings from text fields
+  _settingsData!.tempUp = double.tryParse(_tempUpController.text) ?? 0.0;
+  _settingsData!.tempDown = double.tryParse(_tempDownController.text) ?? 0.0;
+  _settingsData!.humUp = int.tryParse(_humUpController.text) ?? 0;
+  _settingsData!.humDown = int.tryParse(_humDownController.text) ?? 0;
+  _settingsData!.coUp = int.tryParse(_coUpController.text) ?? 0;
+  _settingsData!.coDown = int.tryParse(_coDownController.text) ?? 0;
 
-      print("Saving settings: $_settingsData");
-      await _firebaseService.updateSettings(_settingsData!);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Settings updated")),
-      );
-    }
+  print("Saving settings: $_settingsData");
+  await _firebaseService.updateSettings(_settingsData!);
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Settings updated")),
+  );
+}
   }
 
   void _showWifiDialog() {

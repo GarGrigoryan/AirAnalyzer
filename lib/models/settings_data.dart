@@ -1,6 +1,6 @@
 class SettingsData {
-  int tempUp;
-  int tempDown;
+  double tempUp;
+  double tempDown;
   int humUp;
   int humDown;
   int coUp;
@@ -23,8 +23,8 @@ class SettingsData {
 
   factory SettingsData.fromMap(Map<String, dynamic> settings, Map<String, dynamic> modes) {
     return SettingsData(
-      tempUp: settings['temp_up'] ?? 0,
-      tempDown: settings['temp_down'] ?? 0,
+      tempUp: (settings['temp_up'] ?? 0).toDouble(),
+      tempDown: (settings['temp_down'] ?? 0).toDouble(),
       humUp: settings['hum_up'] ?? 0,
       humDown: settings['hum_down'] ?? 0,
       coUp: settings['co_up'] ?? 0,
@@ -37,8 +37,8 @@ class SettingsData {
 
   Map<String, dynamic> toSettingsMap() {
     return {
-      'temp_up': tempUp,
-      'temp_down': tempDown,
+      'temp_up': double.parse(tempUp.toStringAsFixed(1)),
+      'temp_down': double.parse(tempDown.toStringAsFixed(1)),
       'hum_up': humUp,
       'hum_down': humDown,
       'co_up': coUp,

@@ -9,7 +9,7 @@ class FirebaseService {
   FirebaseService._internal();
 
   final _auth = FirebaseAuth.instance;
-  final _db = FirebaseDatabase.instance.ref(); // Use ref() instead of reference()
+  final _db = FirebaseDatabase.instance.ref();
   String? _uid;
 
   /// Login using Firebase Email/Password
@@ -19,6 +19,7 @@ class FirebaseService {
       password: password,
     );
     _uid = result.user?.uid;
+    print("Logged in with UID: $_uid");
   }
 
   /// Get device ID (UID), fallback for testing
@@ -30,18 +31,21 @@ class FirebaseService {
   /// Fetch live sensor data
   Future<SensorData?> fetchSensorData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
-
-    final deviceId = user.uid; // Assuming device ID == Firebase UID
-    final ref = FirebaseDatabase.instance.ref('devices/$deviceId/sensors');
-
-    final snapshot = await ref.get();
-    if (!snapshot.exists) {
-      print("No sensor data found for user: $deviceId");
+    if (user == null) {
+      print("No logged in user");
       return null;
     }
 
-    final data = snapshot.value as Map;
+    final ref = _db.child("devices").child(user.uid).child("sensors");
+    final snapshot = await ref.get();
+    print("Sensor snapshot: ${snapshot.value}");
+
+    if (!snapshot.exists || snapshot.value == null) {
+      print("No sensor data found for user: ${user.uid}");
+      return null;
+    }
+
+    final data = Map<String, dynamic>.from(snapshot.value as Map);
 
     return SensorData(
       temperature: (data['temperature'] ?? 0).toDouble(),
@@ -51,45 +55,58 @@ class FirebaseService {
     );
   }
 
-  /// Fetch both settings and modes
+  /// Fetch settings + modes
   Future<SettingsData?> fetchSettingsData() async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return null;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print("No logged in user");
+      return null;
+    }
 
-  final deviceId = user.uid;
-  final ref = FirebaseDatabase.instance.ref('devices/$deviceId/settings');
+    final settingsRef = _db.child("devices").child(user.uid).child("settings");
+    final modesRef = _db.child("devices").child(user.uid).child("modes");
 
-  final snapshot = await ref.get();
-  if (!snapshot.exists) {
-    print("No settings data found for user: $deviceId");
-    return null;
+    final settingsSnap = await settingsRef.get();
+    final modesSnap = await modesRef.get();
+
+    print("Settings snapshot: ${settingsSnap.value}");
+    print("Modes snapshot: ${modesSnap.value}");
+
+    if (!settingsSnap.exists || settingsSnap.value == null) {
+      print("No settings data found for user: ${user.uid}");
+      return null;
+    }
+
+    final settingsData = Map<String, dynamic>.from(settingsSnap.value as Map);
+    final modesData = modesSnap.exists && modesSnap.value != null
+        ? Map<String, dynamic>.from(modesSnap.value as Map)
+        : {};
+
+    return SettingsData(
+      tempUp: (settingsData['temp_up'] ?? settingsData['tempUp'] ?? 0).toDouble(),
+      tempDown: (settingsData['temp_down'] ?? settingsData['tempDown'] ?? 0).toDouble(),
+      humUp: (settingsData['hum_up'] ?? settingsData['humUp'] ?? 0).toInt(),
+      humDown: (settingsData['hum_down'] ?? settingsData['humDown'] ?? 0).toInt(),
+      coUp: (settingsData['co_up'] ?? settingsData['coUp'] ?? 0).toInt(),
+      coDown: (settingsData['co_down'] ?? settingsData['coDown'] ?? 0).toInt(),
+      rejimTemp: (modesData['rejim_temp'] ?? modesData['rejimTemp'] ?? false),
+      rejimHum: (modesData['rejim_hum'] ?? modesData['rejimHum'] ?? false),
+      rejimCo: (modesData['rejim_co'] ?? modesData['rejimCo'] ?? false),
+    );
   }
-
-  final data = snapshot.value as Map;
-
-  return SettingsData(
-    tempUp: (data['temp_up'] ?? data['tempUp'] ?? 0).toInt(),
-    tempDown: (data['temp_down'] ?? data['tempDown'] ?? 0).toInt(),
-    humUp: (data['hum_up'] ?? data['humUp'] ?? 0).toInt(),
-    humDown: (data['hum_down'] ?? data['humDown'] ?? 0).toInt(),
-    coUp: (data['co_up'] ?? data['coUp'] ?? 0).toInt(),
-    coDown: (data['co_down'] ?? data['coDown'] ?? 0).toInt(),
-    rejimTemp: (data['rejim_temp'] ?? false),
-    rejimHum: (data['rejim_hum'] ?? false),
-    rejimCo: (data['rejim_co'] ?? false),
-  );
-}
-
 
   /// Save updated settings + modes
   Future<void> updateSettings(SettingsData data) async {
+    print("Updating settings: ${data.toSettingsMap()}");
+    print("Updating modes: ${data.toModesMap()}");
     await _deviceRef.child("settings").set(data.toSettingsMap());
     await _deviceRef.child("modes").set(data.toModesMap());
   }
 
-  /// Used to check last timestamp of sensor update
+  /// Check last sensor timestamp
   Future<int?> getLastTimestamp() async {
     final snapshot = await _deviceRef.child("sensors/timestamp").once();
+    print("Last timestamp snapshot: ${snapshot.snapshot.value}");
     return snapshot.snapshot.value as int?;
   }
 }
