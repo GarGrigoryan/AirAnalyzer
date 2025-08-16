@@ -10,23 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 
-String _formatTimeAgo(int? timestamp) {
-  if (timestamp == null) return 'Never';
-  
-  final now = DateTime.now().millisecondsSinceEpoch;
-  final timestampMs = timestamp * 1000;
-  final difference = now - timestampMs;
-  
-  if (difference < 60000) {
-    return 'Just now';
-  } else if (difference < 3600000) {
-    return '${(difference / 60000).round()}m ago';
-  } else if (difference < 86400000) {
-    return '${(difference / 3600000).round()}h ago';
-  } else {
-    return '${(difference / 86400000).round()}d ago';
-  }
-}
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -79,22 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-  void checkSensorFreshness() async {
-  if (_sensorData == null || _sensorData!.timestamp == null) return;
-
-  final int now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  final int timestamp = _sensorData!.timestamp!; // ✅ Moved here
-
-  final int diffMinutes = ((now - timestamp) / 60).floor();
-
-  if (diffMinutes >= 5 && !_notifiedStale) {
-    await NotificationService.showStaleDataNotification();
-    _notifiedStale = true;
-  } else if (diffMinutes < 5) {
-    _notifiedStale = false;
-  }
-}
-
+  
 
   void startPeriodicCheck() {
   Timer.periodic(Duration(minutes: 1), (timer) {
@@ -117,12 +86,45 @@ class _HomeScreenState extends State<HomeScreen> {
     _updateTimer = null;
   }
 
-  bool _isDataFresh(int? timestamp) {
-    if (timestamp == null) return false;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final timestampMs = timestamp * 1000;
-    return (now - timestampMs) < 5 * 60 * 1000; // 5 minutes in milliseconds
+  String _formatTimeAgo(int? timestamp) {
+  if (timestamp == null) return 'Never';
+
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final timestampMs = timestamp * 1000; // convert seconds → ms
+  final difference = now - timestampMs;
+
+  if (difference < 60000) {
+    return 'Just now';
+  } else if (difference < 3600000) {
+    return '${(difference / 60000).round()}m ago';
+  } else if (difference < 86400000) {
+    return '${(difference / 3600000).round()}h ago';
+  } else {
+    return '${(difference / 86400000).round()}d ago';
   }
+}
+
+void checkSensorFreshness() async {
+  if (_sensorData == null || _sensorData!.timestamp == null) return;
+
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final timestampMs = _sensorData!.timestamp! * 1000; // convert seconds → ms
+  final diffMinutes = ((now - timestampMs) / 60000).floor();
+
+  if (diffMinutes >= 5 && !_notifiedStale) {
+    await NotificationService.showStaleDataNotification();
+    _notifiedStale = true;
+  } else if (diffMinutes < 5) {
+    _notifiedStale = false;
+  }
+}
+
+bool _isDataFresh(int? timestamp) {
+  if (timestamp == null) return false;
+  final now = DateTime.now().millisecondsSinceEpoch;
+  return (now - timestamp * 1000) < 5 * 60 * 1000; // convert seconds → ms
+}
+
 
   Future<void> _loadData() async {
     try {
