@@ -112,7 +112,6 @@ void checkSensorFreshness() async {
   final diffMinutes = ((now - timestampMs) / 60000).floor();
 
   if (diffMinutes >= 5 && !_notifiedStale) {
-    await NotificationService.showStaleDataNotification();
     _notifiedStale = true;
   } else if (diffMinutes < 5) {
     _notifiedStale = false;
