@@ -9,9 +9,6 @@ import 'package:air_analyzer_android/services/notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
-
-
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -33,8 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
   SettingsData? _settingsData;
   bool _showSettings = false;
 
-
-  // Controllers for numeric input fields
   final TextEditingController _tempUpController = TextEditingController();
   final TextEditingController _tempDownController = TextEditingController();
   final TextEditingController _humUpController = TextEditingController();
@@ -57,19 +52,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _requestPermissions() async {
-  final status = await Permission.notification.status;
-  if (!status.isGranted) {
-    await Permission.notification.request();
+    final status = await Permission.notification.status;
+    if (!status.isGranted) {
+      await Permission.notification.request();
+    }
   }
-}
-
-  
 
   void startPeriodicCheck() {
-  Timer.periodic(Duration(minutes: 1), (timer) {
-    if (!mounted) timer.cancel(); // Stop if widget disposed
-    checkSensorFreshness();
-  });
+    Timer.periodic(Duration(minutes: 1), (timer) {
+      if (!mounted) timer.cancel();
+      checkSensorFreshness();
+    });
   }
 
   void _startAutoUpdate() {
@@ -87,43 +80,42 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _formatTimeAgo(int? timestamp) {
-  if (timestamp == null) return 'Never';
+    if (timestamp == null) return 'Never';
 
-  final now = DateTime.now().millisecondsSinceEpoch;
-  final timestampMs = timestamp * 1000; // convert seconds → ms
-  final difference = now - timestampMs;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final timestampMs = timestamp * 1000;
+    final difference = now - timestampMs;
 
-  if (difference < 60000) {
-    return 'Just now';
-  } else if (difference < 3600000) {
-    return '${(difference / 60000).round()}m ago';
-  } else if (difference < 86400000) {
-    return '${(difference / 3600000).round()}h ago';
-  } else {
-    return '${(difference / 86400000).round()}d ago';
+    if (difference < 60000) {
+      return 'Just now';
+    } else if (difference < 3600000) {
+      return '${(difference / 60000).round()}m ago';
+    } else if (difference < 86400000) {
+      return '${(difference / 3600000).round()}h ago';
+    } else {
+      return '${(difference / 86400000).round()}d ago';
+    }
   }
-}
 
-void checkSensorFreshness() async {
-  if (_sensorData == null || _sensorData!.timestamp == null) return;
+  void checkSensorFreshness() async {
+    if (_sensorData == null || _sensorData!.timestamp == null) return;
 
-  final now = DateTime.now().millisecondsSinceEpoch;
-  final timestampMs = _sensorData!.timestamp! * 1000; // convert seconds → ms
-  final diffMinutes = ((now - timestampMs) / 60000).floor();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final timestampMs = _sensorData!.timestamp! * 1000;
+    final diffMinutes = ((now - timestampMs) / 60000).floor();
 
-  if (diffMinutes >= 5 && !_notifiedStale) {
-    _notifiedStale = true;
-  } else if (diffMinutes < 5) {
-    _notifiedStale = false;
+    if (diffMinutes >= 5 && !_notifiedStale) {
+      _notifiedStale = true;
+    } else if (diffMinutes < 5) {
+      _notifiedStale = false;
+    }
   }
-}
 
-bool _isDataFresh(int? timestamp) {
-  if (timestamp == null) return false;
-  final now = DateTime.now().millisecondsSinceEpoch;
-  return (now - timestamp * 1000) < 5 * 60 * 1000; // convert seconds → ms
-}
-
+  bool _isDataFresh(int? timestamp) {
+    if (timestamp == null) return false;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (now - timestamp * 1000) < 5 * 60 * 1000;
+  }
 
   Future<void> _loadData() async {
     try {
@@ -136,18 +128,17 @@ bool _isDataFresh(int? timestamp) {
       print("Settings data fetched: $settings");
 
       if (mounted) {
-  setState(() {
-    _sensorData = sensor;
-    _settingsData = settings;
-    // Initialize controllers with current values, 1 decimal for temps
-    _tempUpController.text = settings?.tempUp.toStringAsFixed(1) ?? '0.0';
-    _tempDownController.text = settings?.tempDown.toStringAsFixed(1) ?? '0.0';
-    _humUpController.text = settings?.humUp.toString() ?? '0';
-    _humDownController.text = settings?.humDown.toString() ?? '0';
-    _coUpController.text = settings?.coUp.toString() ?? '0';
-    _coDownController.text = settings?.coDown.toString() ?? '0';
-  });
-}
+        setState(() {
+          _sensorData = sensor;
+          _settingsData = settings;
+          _tempUpController.text = settings?.tempUp.toStringAsFixed(1) ?? '0.0';
+          _tempDownController.text = settings?.tempDown.toStringAsFixed(1) ?? '0.0';
+          _humUpController.text = settings?.humUp.toString() ?? '0';
+          _humDownController.text = settings?.humDown.toString() ?? '0';
+          _coUpController.text = settings?.coUp.toString() ?? '0';
+          _coDownController.text = settings?.coDown.toString() ?? '0';
+        });
+      }
     } catch (e) {
       print("Error loading data: $e");
     }
@@ -160,20 +151,19 @@ bool _isDataFresh(int? timestamp) {
 
   void _saveSettings() async {
     if (_settingsData != null) {
-  // Update settings from text fields
-  _settingsData!.tempUp = double.tryParse(_tempUpController.text) ?? 0.0;
-  _settingsData!.tempDown = double.tryParse(_tempDownController.text) ?? 0.0;
-  _settingsData!.humUp = int.tryParse(_humUpController.text) ?? 0;
-  _settingsData!.humDown = int.tryParse(_humDownController.text) ?? 0;
-  _settingsData!.coUp = int.tryParse(_coUpController.text) ?? 0;
-  _settingsData!.coDown = int.tryParse(_coDownController.text) ?? 0;
+      _settingsData!.tempUp = double.tryParse(_tempUpController.text) ?? 0.0;
+      _settingsData!.tempDown = double.tryParse(_tempDownController.text) ?? 0.0;
+      _settingsData!.humUp = int.tryParse(_humUpController.text) ?? 0;
+      _settingsData!.humDown = int.tryParse(_humDownController.text) ?? 0;
+      _settingsData!.coUp = int.tryParse(_coUpController.text) ?? 0;
+      _settingsData!.coDown = int.tryParse(_coDownController.text) ?? 0;
 
-  print("Saving settings: $_settingsData");
-  await _firebaseService.updateSettings(_settingsData!);
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Settings updated")),
-  );
-}
+      print("Saving settings: $_settingsData");
+      await _firebaseService.updateSettings(_settingsData!);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Settings updated")),
+      );
+    }
   }
 
   void _showWifiDialog() {
@@ -325,18 +315,18 @@ bool _isDataFresh(int? timestamp) {
                       ),
                       const SizedBox(width: 8),
                       ValueListenableBuilder<String>(
-  valueListenable: _timeAgoNotifier,
-  builder: (context, timeText, _) {
-    final isFresh = _isDataFresh(_sensorData?.timestamp);
-    return Text(
-      timeText,
-      style: TextStyle(
-        color: isFresh ? Colors.green : Colors.red,
-        fontSize: 16,
-      ),
-    );
-  },
-)
+                        valueListenable: _timeAgoNotifier,
+                        builder: (context, timeText, _) {
+                          final isFresh = _isDataFresh(_sensorData?.timestamp);
+                          return Text(
+                            timeText,
+                            style: TextStyle(
+                              color: isFresh ? Colors.green : Colors.red,
+                              fontSize: 16,
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ],
@@ -348,8 +338,6 @@ bool _isDataFresh(int? timestamp) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-
-                  // Temperature Up (replaced with text field)
                   const Text("Temperature Up:"),
                   TextField(
                     controller: _tempUpController,
@@ -359,10 +347,7 @@ bool _isDataFresh(int? timestamp) {
                       hintText: 'Enter value',
                     ),
                   ),
-
                   const SizedBox(height: 15),
-
-                  // Temperature Down (replaced with text field)
                   const Text("Temperature Down:"),
                   TextField(
                     controller: _tempDownController,
@@ -372,10 +357,7 @@ bool _isDataFresh(int? timestamp) {
                       hintText: 'Enter value',
                     ),
                   ),
-
                   const SizedBox(height: 15),
-
-                  // Humidity Up (replaced with text field)
                   const Text("Humidity Up:"),
                   TextField(
                     controller: _humUpController,
@@ -385,10 +367,7 @@ bool _isDataFresh(int? timestamp) {
                       hintText: 'Enter value',
                     ),
                   ),
-
                   const SizedBox(height: 15),
-
-                  // Humidity Down (replaced with text field)
                   const Text("Humidity Down:"),
                   TextField(
                     controller: _humDownController,
@@ -398,10 +377,7 @@ bool _isDataFresh(int? timestamp) {
                       hintText: 'Enter value',
                     ),
                   ),
-
                   const SizedBox(height: 15),
-
-                  // CO₂ Up (replaced with text field)
                   const Text("CO₂ Up:"),
                   TextField(
                     controller: _coUpController,
@@ -411,10 +387,7 @@ bool _isDataFresh(int? timestamp) {
                       hintText: 'Enter value',
                     ),
                   ),
-
                   const SizedBox(height: 15),
-
-                  // CO₂ Down (replaced with text field)
                   const Text("CO₂ Down:"),
                   TextField(
                     controller: _coDownController,
@@ -424,10 +397,7 @@ bool _isDataFresh(int? timestamp) {
                       hintText: 'Enter value',
                     ),
                   ),
-
                   const SizedBox(height: 15),
-
-                  // Auto Temperature (replaced with dropdown)
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       labelText: 'Auto Temperature',
@@ -444,10 +414,7 @@ bool _isDataFresh(int? timestamp) {
                       });
                     },
                   ),
-
                   const SizedBox(height: 15),
-
-                  // Auto Humidity (replaced with dropdown)
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       labelText: 'Auto Humidity',
@@ -464,10 +431,7 @@ bool _isDataFresh(int? timestamp) {
                       });
                     },
                   ),
-
                   const SizedBox(height: 15),
-
-                  // Auto CO₂ (replaced with dropdown)
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       labelText: 'Auto CO₂',
@@ -484,7 +448,6 @@ bool _isDataFresh(int? timestamp) {
                       });
                     },
                   ),
-
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _saveSettings,
@@ -499,28 +462,26 @@ bool _isDataFresh(int? timestamp) {
   }
 
   void _showBleDevicePicker() async {
-  final status = await Permission.location.request();
-  if (!status.isGranted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Location permission is required for BLE scan")),
-    );
-    return;
-  }
+    final status = await Permission.location.request();
+    if (!status.isGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Location permission is required for BLE scan")),
+      );
+      return;
+    }
 
-  List<DiscoveredDevice> devices = [];
+    List<DiscoveredDevice> devices = [];
 
-  // Show a loading dialog while scanning
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) {
-      // Start scanning
-      _bleService.startScan((device) {
-        if (!devices.any((d) => d.id == device.id)) {
-          devices.add(device);
-        }
-      });
-      return AlertDialog(
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        _bleService.startScan((device) {
+          if (!devices.any((d) => d.id == device.id)) {
+            devices.add(device);
+          }
+        });
+        return AlertDialog(
         title: const Text("Scanning for BLE devices..."),
         content: const SizedBox(
           height: 100,
@@ -538,11 +499,9 @@ bool _isDataFresh(int? timestamp) {
       );
     },
   );
-
-  // Wait a few seconds for scanning
   await Future.delayed(const Duration(seconds: 5));
   _bleService.stopScan();
-  Navigator.pop(context); // Close loading dialog
+  Navigator.pop(context);
 
   if (devices.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -551,7 +510,6 @@ bool _isDataFresh(int? timestamp) {
     return;
   }
 
-  // Show devices in a selection dialog
   showDialog(
     context: context,
     builder: (_) {
@@ -568,14 +526,12 @@ bool _isDataFresh(int? timestamp) {
                 title: Text(device.name.isNotEmpty ? device.name : device.id),
                 subtitle: Text(device.id),
                 onTap: () async {
-                  Navigator.pop(context); // Close picker
+                  Navigator.pop(context);
                   await _bleService.connectToDevice(device.id);
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Connected to ${device.name}")),
                   );
-
-                  // Open Wi-Fi dialog
                   _showWifiDialog();
                 },
               );
