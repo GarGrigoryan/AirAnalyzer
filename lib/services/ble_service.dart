@@ -83,7 +83,7 @@ class BleService {
     }
 
     try {
-      String combined = "$ssid|$password"; // send in one packet
+      String combined = "$ssid|$password";
       await _ble.writeCharacteristicWithResponse(
         _wifiChar!,
         value: utf8.encode(combined),

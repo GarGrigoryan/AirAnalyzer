@@ -12,7 +12,6 @@ class FirebaseService {
   final _db = FirebaseDatabase.instance.ref();
   String? _uid;
 
-  /// Login using Firebase Email/Password
   Future<void> login(String email, String password) async {
     final result = await _auth.signInWithEmailAndPassword(
       email: email,
@@ -22,13 +21,10 @@ class FirebaseService {
     print("Logged in with UID: $_uid");
   }
 
-  /// Get device ID (UID), fallback for testing
   String get deviceId => _uid ?? "dAxXdU5e4PVqpvre1iXZWIWRl5k1";
 
-  /// Firebase DB ref for current device
   DatabaseReference get _deviceRef => _db.child("devices").child(deviceId);
 
-  /// Fetch live sensor data
   Future<SensorData?> fetchSensorData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -55,7 +51,6 @@ class FirebaseService {
     );
   }
 
-  /// Fetch settings + modes
   Future<SettingsData?> fetchSettingsData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -95,7 +90,6 @@ class FirebaseService {
     );
   }
 
-  /// Save updated settings + modes
   Future<void> updateSettings(SettingsData data) async {
     print("Updating settings: ${data.toSettingsMap()}");
     print("Updating modes: ${data.toModesMap()}");
@@ -103,7 +97,6 @@ class FirebaseService {
     await _deviceRef.child("modes").set(data.toModesMap());
   }
 
-  /// Check last sensor timestamp
   Future<int?> getLastTimestamp() async {
     final snapshot = await _deviceRef.child("sensors/timestamp").once();
     print("Last timestamp snapshot: ${snapshot.snapshot.value}");

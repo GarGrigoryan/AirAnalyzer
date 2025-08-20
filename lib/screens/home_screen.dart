@@ -473,73 +473,73 @@ class _HomeScreenState extends State<HomeScreen> {
     List<DiscoveredDevice> devices = [];
 
     showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        _bleService.startScan((device) {
-          if (!devices.any((d) => d.id == device.id)) {
-            devices.add(device);
-          }
-        });
-        return AlertDialog(
-        title: const Text("Scanning for BLE devices..."),
-        content: const SizedBox(
-          height: 100,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _bleService.stopScan();
-              Navigator.pop(context);
-            },
-            child: const Text("Cancel"),
+        context: context,
+        barrierDismissible: false,
+        builder: (_) {
+          _bleService.startScan((device) {
+            if (!devices.any((d) => d.id == device.id)) {
+              devices.add(device);
+            }
+          });
+          return AlertDialog(
+          title: const Text("Scanning for BLE devices..."),
+          content: const SizedBox(
+            height: 100,
+            child: Center(child: CircularProgressIndicator()),
           ),
-        ],
-      );
-    },
-  );
-  await Future.delayed(const Duration(seconds: 5));
-  _bleService.stopScan();
-  Navigator.pop(context);
-
-  if (devices.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("No BLE devices found")),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _bleService.stopScan();
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
+            ),
+          ],
+        );
+      },
     );
-    return;
-  }
+    await Future.delayed(const Duration(seconds: 5));
+    _bleService.stopScan();
+    Navigator.pop(context);
 
-  showDialog(
-    context: context,
-    builder: (_) {
-      return AlertDialog(
-        title: const Text("Select BLE Device"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: devices.length,
-            itemBuilder: (context, index) {
-              final device = devices[index];
-              return ListTile(
-                title: Text(device.name.isNotEmpty ? device.name : device.id),
-                subtitle: Text(device.id),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _bleService.connectToDevice(device.id);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Connected to ${device.name}")),
-                  );
-                  _showWifiDialog();
-                },
-              );
-            },
-          ),
-        ),
+    if (devices.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No BLE devices found")),
       );
-    },
-  );
-}
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Select BLE Device"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: devices.length,
+              itemBuilder: (context, index) {
+                final device = devices[index];
+                return ListTile(
+                  title: Text(device.name.isNotEmpty ? device.name : device.id),
+                  subtitle: Text(device.id),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _bleService.connectToDevice(device.id);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Connected to ${device.name}")),
+                    );
+                    _showWifiDialog();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

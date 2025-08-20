@@ -35,7 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
       
-      // AuthWrapper will handle the navigation automatically
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = _getFriendlyErrorMessage(e);
