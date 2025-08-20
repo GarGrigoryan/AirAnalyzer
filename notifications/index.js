@@ -6,7 +6,7 @@ admin.initializeApp();
 const db = admin.database();
 
 exports.sendNotificationIfOffline = functions.pubsub
-  .schedule("every 1 minutes") // check every minute
+  .schedule("every 1 minutes")
   .onRun(async (context) => {
     console.log("🔔 Running notification check...");
 
@@ -32,7 +32,7 @@ exports.sendNotificationIfOffline = functions.pubsub
         const timestamp = parseInt(
           sensors.child("timestamp").val(),
           10,
-        ); // ✅ force number
+        );
 
         if (!timestamp) {
           console.log(`No timestamp for device ${deviceId}`);
