@@ -1,6 +1,6 @@
 # air_analyzer_android
 
-A new Flutter project.
+Air analyzer
 
 ## Getting Started
 
