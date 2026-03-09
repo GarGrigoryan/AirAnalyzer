@@ -1,6 +1,6 @@
 # air_analyzer_android
 
-Air analyzer
+Air analyzer flutter app
 
 ## Getting Started
 
