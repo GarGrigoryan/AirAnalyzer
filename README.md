@@ -1,6 +1,7 @@
 # air_analyzer_android
 
-Air analyzer flutter app\n
+Air analyzer flutter app
+
 Built for esp32 s3
 
 ## Getting Started
