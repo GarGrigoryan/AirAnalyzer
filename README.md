@@ -1,4 +1,4 @@
-# air_analyzer_android
+# Air Analyzer
 
 Air analyzer flutter app
 
