@@ -2,7 +2,7 @@
 
 Air analyzer flutter app
 
-Built for esp32 s3
+Built for esp32 S3
 
 ## Getting Started
 
