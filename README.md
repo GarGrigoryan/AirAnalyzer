@@ -4,6 +4,8 @@ Air analyzer flutter app
 
 Built for esp32 S3
 
+Temperature
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
