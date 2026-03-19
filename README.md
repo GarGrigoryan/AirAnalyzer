@@ -4,7 +4,8 @@ Air analyzer flutter app
 
 Built for esp32 S3
 
-Temperature
+- Temperature
+- Humidity
 
 ## Getting Started
 
