@@ -6,6 +6,7 @@ Built for esp32 S3
 
 - Temperature
 - Humidity
+- CO2
 
 ## Getting Started
 
