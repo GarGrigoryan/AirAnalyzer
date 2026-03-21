@@ -8,6 +8,8 @@ Built for esp32 S3
 - Humidity
 - CO2
 
+## Description
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
