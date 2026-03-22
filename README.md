@@ -10,6 +10,9 @@ Built for esp32 S3
 
 ## Description
 
+Air analyzer that measures Temperature, Humidity and CO2
+and controls relays based on the set parameters.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
