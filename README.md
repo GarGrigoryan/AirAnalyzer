@@ -15,6 +15,8 @@ and controls relays based on the set parameters.
 
 ### Working Ranges
 
+co2 -- 400-5000ppm
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
