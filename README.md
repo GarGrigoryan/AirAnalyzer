@@ -15,7 +15,7 @@ and controls relays based on the set parameters.
 
 ### Working Ranges
 
-co2 -- 400-5000ppm
+- co2 -- 400-5000ppm
 
 ## Getting Started
 
